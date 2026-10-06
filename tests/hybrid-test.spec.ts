@@ -1,18 +1,29 @@
-import { expect } from '@playwright/test';
-import { ApiClient } from '../client';
-import { LoginResponse } from '../types/auth.types';
+import { test, expect } from '../fixtures/hybrid.fixture';
 
-export class AuthService {
-  constructor(private readonly apiClient: ApiClient) {}
+test.describe('Hybrid Branch Automation', () => {
+  test('creates and deletes a branch through the UI', async ({
+    branchPage,
+    branchData,
+  }) => {
+    await branchPage.goToBranchList();
+    let branchCreated = false;
 
-  async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await this.apiClient.post('accounts/login/', { email, password: 'chairlyo' });
+    try {
+      await branchPage.createBranch(branchData);
+      branchCreated = true;
 
-    expect(response.status(), 'Login should succeed').toBe(200);
+      await branchPage.verifyToast('Branch Created', 'The branch has been created successfully.');
+      await branchPage.verifyBranchVisible(branchData.slug);
+      await branchPage.verifyBranchStatus(branchData.slug, 'Active');
 
-    const body: LoginResponse = await response.json();
-    this.apiClient.setAuthToken(body.access);
-
-    return body;
-  }
-}
+      await branchPage.deleteBranch(branchData.slug);
+      branchCreated = false;
+      await branchPage.verifyBranchRemoved(branchData.slug);
+    } finally {
+      if (branchCreated && (await branchPage.getRow(branchData.slug).count()) > 0) {
+        await branchPage.deleteBranch(branchData.slug);
+        await branchPage.verifyBranchRemoved(branchData.slug);
+      }
+    }
+  });
+});
