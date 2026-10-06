@@ -18,10 +18,36 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
+      - name: Resolve UI base URL
+        shell: bash
+        env:
+          BASE_URL_SECRET: ${{ secrets.BASE_URL }}
+          LEGACY_BASE_URL_SECRET: ${{ secrets.BASEURL }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: |
+          base_url="${BASE_URL_SECRET:-${LEGACY_BASE_URL_SECRET:-}}"
+
+          if [[ -z "$base_url" && -n "$API_BASE_URL" ]]; then
+            api_base_url="${API_BASE_URL%/}"
+            if [[ "$api_base_url" == */api ]]; then
+              base_url="${api_base_url%/api}"
+            fi
+          fi
+
+          if [[ -z "$base_url" ]]; then
+            echo "::error::Set the BASE_URL GitHub Actions secret (or API_BASE_URL ending in /api)."
+            exit 1
+          fi
+
+          if [[ ! "$base_url" =~ ^https?:// ]]; then
+            echo "::error::BASE_URL must start with http:// or https://."
+            exit 1
+          fi
+
+          echo "BASE_URL=$base_url" >> "$GITHUB_ENV"
       - name: Run Playwright tests
         run: npx playwright test
         env:
-          BASE_URL: ${{ secrets.BASE_URL }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           ORG_ADMIN_EMAIL: ${{ secrets.ORG_ADMIN_EMAIL }}
           ORG_ADMIN_PASSWORD: ${{ secrets.ORG_ADMIN_PASSWORD }}
