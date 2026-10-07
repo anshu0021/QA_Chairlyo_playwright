@@ -36,8 +36,8 @@ export const generateBranchData = (): BranchData => {
   const suffix = Date.now().toString();
 
   return {
-    name: `Anu ${suffix}`,
-    slug: `anu-${suffix}`,
+    name: `Kanchan ${suffix}`,
+    slug: `kanchan-${suffix}`,
     phone: generatePhoneNumber(),
     email: `qa.branch.${suffix}@example.com`,
     address: 'Shankhamul, Kathmandu, Nepal',
